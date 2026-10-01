@@ -1,0 +1,12 @@
+# 🔴 The WASM binary must never be touched by line-ending conversion.
+# On a machine with core.autocrlf=true a fresh clone would rewrite 0x0A bytes inside the binary,
+# producing a .wasm that is corrupt but present. The SHA-256 artifact test would catch it, which
+# is the point of that test, but it should never get that far.
+*.wasm binary
+
+# Keep the readable WASM source and the JS deterministic too, so the committed hash of the binary
+# stays reproducible from the source on any platform.
+*.wat text eol=lf
+*.js  text eol=lf
+*.json text eol=lf
+*.md  text eol=lf

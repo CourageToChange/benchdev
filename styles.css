@@ -1,0 +1,886 @@
+/* Self-hosted, and that is a REQUIREMENT rather than a preference. A Google Fonts request would
+   be a third-party origin, which the privacy rules forbid outright, and `font-src 'self'`
+   blocks it regardless. Both are OFL. Both are VARIABLE and their axes are load-bearing: the
+   design spec uses Anybody's width axis as its third hierarchy device, which is why one family
+   suffices. Subset to the characters this UI can render, so 57.9 KB for the pair.
+   `font-display: swap` so a slow font never delays the first paint of a benchmark. */
+@font-face {
+  font-family: "Anybody";
+  src: url("./assets/fonts/anybody.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-stretch: 50% 150%;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Martian Mono";
+  src: url("./assets/fonts/martian-mono.woff2") format("woff2-variations");
+  font-weight: 100 800;
+  font-stretch: 75% 112.5%;
+  font-display: swap;
+  font-style: normal;
+}
+
+:root {
+  color-scheme: dark;
+  --color-bg-base: #101417;
+  --color-bg-raised: #171C20;
+  --color-bg-sunken: #0B0E10;
+  --color-text-primary: #EDE8E0;
+  --color-text-secondary: #A8B0B6;
+  --color-text-muted: #848E95;
+  --color-text-on-accent: #101417;
+  --color-accent-live: #5FA8C7;
+  --color-accent-trace-dim: #3A7690;
+  --color-line-structural: #656F77;
+  --color-line-decorative: #2A3136;
+  --color-state-ok: #7FB89A;
+  --color-state-notice: #C8CED2;
+  --color-state-fault: #E0736A;
+  --color-focus-ring: #EDE8E0;
+  --font-primary: "Anybody", "Arial Narrow", sans-serif;
+  --font-data: "Martian Mono", ui-monospace, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --size-score: clamp(4.5rem, 18vw, 9rem);
+  --size-3xl: 2.441rem;
+  --size-2xl: 1.953rem;
+  --size-xl: 1.563rem;
+  --size-lg: 1.25rem;
+  --size-base: 1rem;
+  --size-sm: 0.875rem;
+  --size-xs: 0.75rem;
+  --line-score: 1;
+  --line-tight: 1.25;
+  --line-body: 1.55;
+  --space-half: 4px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+  --space-12: 96px;
+  --radius-sharp: 0;
+  --radius-panel: 2px;
+  --radius-pill: 4px;
+  --target-min: 48px;
+  --target-primary: 56px;
+  --target-gap: 8px;
+  --motion-fast: 120ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* UX-17, Gate 3: `min-width: 320px` forced 15px of horizontal scroll at a 320px viewport,
+     which is WCAG 1.4.10 Reflow, and the layout already fits at 288px so the declaration bought
+     nothing. */
+  min-width: 0;
+  background: var(--color-bg-base);
+}
+
+body {
+  min-height: 100svh;
+  margin: 0;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  font-size: var(--size-base);
+  font-weight: var(--weight-regular);
+  line-height: var(--line-body);
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+summary,
+input[type="radio"] + label {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible + label,
+textarea:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  width: min(calc(100% - var(--space-4)), 680px);
+  min-height: 100svh;
+  margin-inline: auto;
+  padding-block: var(--space-4) var(--space-8);
+}
+
+.app-shell.result-width {
+  width: min(calc(100% - var(--space-4)), 960px);
+}
+
+.eyebrow,
+.section-label,
+.identity-stamp,
+.axis-label,
+.elapsed,
+.measurement-unit,
+.copy-status,
+.diagnostic-fallback,
+.raw-table,
+.subscore-table,
+.comparison-table {
+  font-family: var(--font-data);
+}
+
+.eyebrow,
+.section-label {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-block-start: 0;
+}
+
+h1 {
+  max-width: 16ch;
+  margin-block-end: var(--space-8);
+  font-size: clamp(var(--size-2xl), 7vw, var(--size-3xl));
+  font-stretch: 100%;
+  line-height: var(--line-tight);
+}
+
+h2 {
+  margin-block-end: var(--space-2);
+  font-size: var(--size-2xl);
+  line-height: var(--line-tight);
+}
+
+h3 {
+  margin-block-end: var(--space-1);
+  font-size: var(--size-lg);
+  line-height: var(--line-tight);
+}
+
+.lede {
+  max-width: 56ch;
+  margin-block-end: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--size-lg);
+}
+
+.measurement-axis {
+  position: relative;
+  min-height: 112px;
+  margin-block: var(--space-4) var(--space-8);
+  padding-block: var(--space-3);
+  background: var(--color-bg-sunken);
+  border-radius: var(--radius-sharp);
+}
+
+.axis-line {
+  position: absolute;
+  inset: 48px var(--space-2) auto;
+  height: 2px;
+  background: var(--color-line-structural);
+}
+
+.axis-reference {
+  position: absolute;
+  inset: 40px auto auto 50%;
+  width: 2px;
+  height: 18px;
+  background: var(--color-line-structural);
+  transform: translateX(-1px);
+}
+
+.axis-label {
+  position: relative;
+  max-width: calc(50% - var(--space-3));
+  margin: 48px 0 0 calc(50% + var(--space-2));
+  color: var(--color-text-muted);
+  font-size: var(--size-xs);
+  line-height: var(--line-body);
+  overflow-wrap: anywhere;
+}
+
+.axis-marker {
+  position: absolute;
+  top: 35px;
+  width: 3px;
+  height: 28px;
+  background: var(--color-text-primary);
+  transform: translateX(-1px);
+}
+
+.axis-marker::before {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: var(--space-1);
+  height: var(--space-1);
+  background: var(--color-text-primary);
+  content: "";
+  transform: translate(-50%, -2px) rotate(45deg);
+}
+
+.measurement-axis.has-score {
+  min-height: 240px;
+}
+
+.has-score .axis-line {
+  top: 176px;
+}
+
+.has-score .axis-reference {
+  top: 168px;
+}
+
+.has-score .axis-label {
+  margin-top: 176px;
+}
+
+.has-score .axis-marker {
+  top: 163px;
+}
+
+.axis-score-label {
+  position: absolute;
+  top: var(--space-1);
+  margin: 0;
+  font-size: var(--size-score);
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.035em;
+  line-height: var(--line-score);
+  white-space: nowrap;
+}
+
+.axis-score-label.align-centre {
+  transform: translateX(-50%);
+}
+
+.axis-score-label.align-right {
+  transform: translateX(-100%);
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  margin-block-end: var(--space-2);
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--target-gap);
+}
+
+.segmented-control input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.segmented-control label {
+  display: grid;
+  min-height: var(--target-min);
+  padding: var(--space-1) var(--space-2);
+  place-content: center;
+  border: 1px solid var(--color-line-structural);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  line-height: var(--line-tight);
+  text-align: center;
+  transition: color var(--motion-fast), background-color var(--motion-fast);
+}
+
+.segmented-control input:checked + label {
+  background: var(--color-text-primary);
+  color: var(--color-text-on-accent);
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--target-gap);
+  align-items: center;
+}
+
+.button,
+button {
+  min-height: var(--target-min);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-line-structural);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-weight: var(--weight-bold);
+  transition: color var(--motion-fast), background-color var(--motion-fast), border-color var(--motion-fast);
+}
+
+button:hover {
+  background: var(--color-bg-raised);
+}
+
+.button-primary {
+  min-height: var(--target-primary);
+  background: var(--color-text-primary);
+  color: var(--color-text-on-accent);
+}
+
+.button-primary:hover {
+  background: var(--color-state-notice);
+}
+
+button:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.consent-block,
+.notice-block,
+.sustained-block {
+  padding: var(--space-3);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-line-decorative);
+  border-radius: var(--radius-panel);
+}
+
+.consent-block .button-row {
+  margin-block-start: var(--space-4);
+}
+
+.running-header {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.elapsed {
+  color: var(--color-accent-live);
+  font-size: var(--size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+progress {
+  display: block;
+  width: 100%;
+  height: var(--space-1);
+  margin-block: var(--space-3);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-sharp);
+  background: var(--color-bg-sunken);
+  color: var(--color-accent-live);
+}
+
+progress::-webkit-progress-bar {
+  background: var(--color-bg-sunken);
+}
+
+progress::-webkit-progress-value {
+  background: var(--color-accent-live);
+}
+
+progress::-moz-progress-bar {
+  background: var(--color-accent-live);
+}
+
+.running-layout {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.phase-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-1);
+  list-style: none;
+}
+
+.phase-list li {
+  position: relative;
+  padding-left: var(--space-3);
+  color: var(--color-text-muted);
+}
+
+/* UX-14, Gate 3: completed and pending phases were distinguished by TEXT COLOUR ALONE, at 1.52:1,
+   with an identical dash. The dash now fills in when a phase is done, so the progress narrative
+   survives without colour discrimination. */
+.phase-list li.complete::before {
+  height: 6px;
+  border-radius: 1px;
+  background: var(--color-text-muted);
+}
+
+.phase-list li::before {
+  position: absolute;
+  top: 0.65em;
+  left: var(--space-half);
+  width: var(--space-1);
+  height: 2px;
+  background: var(--color-line-structural);
+  content: "";
+}
+
+.phase-list li.complete {
+  color: var(--color-text-secondary);
+}
+
+.phase-list li.current {
+  color: var(--color-text-primary);
+}
+
+.phase-list li.current::before {
+  background: var(--color-accent-live);
+  animation: phase-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes phase-pulse {
+  from { width: var(--space-1); }
+  to { width: var(--space-2); }
+}
+
+.narration {
+  min-height: calc(3 * 1em * var(--line-body));
+  margin-block: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.preview-stack {
+  width: 320px;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--color-bg-sunken);
+  outline: 1px solid var(--color-line-structural);
+  outline-offset: -1px;
+}
+
+.gpu-preview {
+  display: block;
+  width: 320px;
+  height: 180px;
+  max-width: 100%;
+}
+
+.gpu-preview[hidden] {
+  display: none;
+}
+
+.live-trace {
+  display: block;
+  width: 100%;
+  height: 64px;
+  margin-block: var(--space-3);
+  background: var(--color-bg-sunken);
+  color: var(--color-accent-trace-dim);
+}
+
+.live-trace path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.running-axis .live-trace {
+  position: absolute;
+  inset: var(--space-1) var(--space-2) auto;
+  width: calc(100% - var(--space-4));
+  margin: 0;
+  background: transparent;
+}
+
+.cancel-row {
+  margin-block-start: var(--space-3);
+  padding-block-start: var(--space-3);
+}
+
+.score-unit {
+  margin-block-end: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--size-sm);
+}
+
+.identity-stamp {
+  width: 100%;
+  margin-block: var(--space-2) var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--size-xs);
+  line-height: var(--line-body);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.notes-row {
+  margin-block: var(--space-3);
+  padding-block: var(--space-2);
+  border-block: 1px solid var(--color-line-structural);
+  color: var(--color-state-notice);
+}
+
+.result-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.subscore-table,
+.raw-table,
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--color-line-structural);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+td:last-child,
+th:last-child {
+  text-align: right;
+}
+
+.composition {
+  font-size: var(--size-sm);
+}
+
+.composition s {
+  color: var(--color-text-muted);
+  text-decoration-thickness: 2px;
+}
+
+.comparison-section {
+  margin-block: var(--space-6) var(--space-4);
+  padding-block-start: var(--space-4);
+  border-top: 1px solid var(--color-line-structural);
+}
+
+.comparison-intro,
+.comparison-status {
+  color: var(--color-text-secondary);
+}
+
+.comparison-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-line-structural);
+}
+
+.comparison-table {
+  min-width: 1040px;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: var(--space-2);
+}
+
+.comparison-table thead th {
+  background: var(--color-bg-sunken);
+  white-space: normal;
+}
+
+.comparison-table .comparison-device {
+  width: 240px;
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  text-align: left;
+}
+
+.comparison-table .comparison-detected {
+  width: 300px;
+  text-align: left;
+}
+
+.comparison-table .comparison-score {
+  min-width: 104px;
+  text-align: right;
+}
+
+.current-comparison-row {
+  background: var(--color-bg-raised);
+}
+
+.current-comparison-row .comparison-device {
+  border-left: var(--space-half) solid var(--color-accent-live);
+}
+
+.comparison-label-kind {
+  display: inline-block;
+  margin-block-end: var(--space-1);
+  padding: 2px var(--space-1);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-family: var(--font-data);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.claimed-label {
+  border-style: dashed;
+}
+
+.comparison-device-name {
+  margin-block-end: var(--space-1);
+  overflow-wrap: anywhere;
+  font-weight: var(--weight-bold);
+}
+
+.comparison-device-meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-data);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-regular);
+  overflow-wrap: anywhere;
+}
+
+.detected-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(12ch, 1fr);
+  margin: 0;
+  column-gap: var(--space-1);
+  row-gap: var(--space-half);
+  color: var(--color-text-secondary);
+  font-size: var(--size-xs);
+  overflow-wrap: anywhere;
+}
+
+.detected-facts dt,
+.detected-facts dd {
+  margin: 0;
+}
+
+.detected-facts dt {
+  color: var(--color-text-muted);
+}
+
+.sustained-block {
+  margin-block: var(--space-4);
+}
+
+/* UX-12, Gate 3: this printed EVERY verdict in `state.ok` green, including "Slowed under load",
+   so the colour asserted "good" directly above text saying the device slowed. Because it never
+   varied it carried no information while looking as though it did, which is worse than no colour.
+   The words carry the meaning now; only a genuinely steady result earns the green, and a slowdown
+   is neutral rather than red, because a device slowing under sustained load is normal and the
+   spec forbids alarming about it. */
+.sustained-verdict {
+  margin-block-end: var(--space-1);
+  color: var(--color-text-primary);
+  font-size: var(--size-lg);
+  font-weight: var(--weight-bold);
+}
+
+.sustained-verdict.verdict-held-steady {
+  color: var(--color-state-ok);
+}
+
+details {
+  border-top: 1px solid var(--color-line-structural);
+}
+
+summary {
+  min-height: var(--target-min);
+  padding-block: var(--space-2);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-weight: var(--weight-medium);
+}
+
+.diagnostic-json,
+.diagnostic-fallback {
+  width: 100%;
+  min-height: 160px;
+  margin-block-end: var(--space-2);
+  padding: var(--space-2);
+  resize: vertical;
+  border: 1px solid var(--color-line-structural);
+  border-radius: var(--radius-sharp);
+  background: var(--color-bg-sunken);
+  color: var(--color-text-secondary);
+  font-family: var(--font-data);
+  font-size: var(--size-xs);
+  line-height: var(--line-body);
+  white-space: pre-wrap;
+}
+
+.copy-status {
+  min-height: 1.5em;
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--size-xs);
+}
+
+.reason-list {
+  display: grid;
+  margin-block: var(--space-4);
+  padding: 0;
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.reason-list li {
+  padding: var(--space-3);
+  background: var(--color-bg-raised);
+  border-left: var(--space-half) solid var(--color-state-notice);
+}
+
+.reason-mechanism {
+  color: var(--color-text-secondary);
+}
+
+.reason-action {
+  margin-block-end: 0;
+  color: var(--color-state-notice);
+  font-weight: var(--weight-medium);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 900px) {
+  .result-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    align-items: start;
+  }
+
+  .result-details {
+    padding-top: var(--space-2);
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .app-shell {
+    padding-block: var(--space-2) var(--space-4);
+  }
+
+  h1 {
+    margin-block-end: var(--space-3);
+    font-size: var(--size-2xl);
+  }
+
+  .measurement-axis {
+    margin-block: var(--space-2) var(--space-3);
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+  }
+
+  .phase-list li.current::before {
+    animation: none;
+  }
+
+  .live-trace path {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .axis-line,
+  .axis-reference,
+  .axis-marker,
+  .axis-marker::before,
+  .phase-list li::before {
+    background: currentColor;
+  }
+
+  .live-trace,
+  .live-trace path,
+  progress {
+    color: CanvasText;
+    forced-color-adjust: auto;
+  }
+
+  .reason-list li {
+    border-left-color: currentColor;
+  }
+
+  /* UX-18, Gate 3: the ONLY properties separating the checked run-length segment from the
+     unchecked one were background-color, color and outline-color, and forced-colors overrides all
+     three. The real radio is 1x1 and clipped, so there is no native control to fall back to
+     visually, which means a High Contrast user could not see which length was selected. Same for
+     the primary and secondary buttons on consent. Opting these two out of the override is the
+     narrow fix; everything else in this block deliberately stays adjusted. */
+  .segmented-control input:checked + label {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .button-primary {
+    border: 3px solid currentColor;
+  }
+
+  .button-secondary {
+    border: 1px solid currentColor;
+  }
+
+  /* The completed-phase marker is a size difference, so it survives on its own, but pin the
+     colours so a filled dash cannot become invisible against the forced background. */
+  .phase-list li.complete::before {
+    background: currentColor;
+  }
+}

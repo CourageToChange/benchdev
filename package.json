@@ -1,0 +1,13 @@
+{
+  "name": "benchdev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check:preloads": "node scripts/perf/generate-preloads.mjs --check",
+    "perf": "node scripts/perf/baseline.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#101417">
+  <title>BenchDev: How fast is this device?</title>
+  <meta name="description" content="A local CPU and GPU benchmark with the working shown.">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./src/ui/app-browser.js"></script>
+
+  <!-- Measured, not assumed. The module graph is 23 files deep and the browser cannot discover a
+       module until it has parsed the one that imports it, so on a 150 ms link they arrived in FIVE
+       sequential waves and LCP was 1840 ms against 44 ms on localhost. The waterfall is invisible
+       on a fast connection, which is exactly why a localhost-only baseline would have concluded
+       "change nothing" about the one condition that matters.
+       These tell the browser about the whole graph from the first response, so the waves collapse.
+       Generated from the real import graph by scripts/perf/generate-preloads.mjs, never typed:
+       a hand-written list silently rots the first time someone adds an import. -->
+  <link rel="modulepreload" href="./src/baselines.js">
+  <link rel="modulepreload" href="./src/benchmark-browser.js">
+  <link rel="modulepreload" href="./src/benchmark-protocol.js">
+  <link rel="modulepreload" href="./src/result.js">
+  <link rel="modulepreload" href="./src/runner.js">
+  <link rel="modulepreload" href="./src/run-state.js">
+  <link rel="modulepreload" href="./src/scoring.js">
+  <link rel="modulepreload" href="./src/sustained.js">
+  <link rel="modulepreload" href="./src/sustained-browser.js">
+  <link rel="modulepreload" href="./src/validity-browser.js">
+  <link rel="modulepreload" href="./src/validity.js">
+  <link rel="modulepreload" href="./src/workloads/cpu-browser.js">
+  <link rel="modulepreload" href="./src/workloads/cpu-timing.js">
+  <link rel="modulepreload" href="./src/workloads/gpu-browser.js">
+  <link rel="modulepreload" href="./src/workloads/gpu.js">
+  <link rel="modulepreload" href="./src/workloads/gpu-preview.js">
+  <link rel="modulepreload" href="./src/workloads/gpu-webgl2.js">
+  <link rel="modulepreload" href="./src/workloads/cpu-parallel-browser.js">
+  <link rel="modulepreload" href="./src/workloads/cpu-parallelism.js">
+  <link rel="modulepreload" href="./src/workloads/cpu-wasm-browser.js">
+  <link rel="modulepreload" href="./src/workloads/cpu-wasm.js">
+  <link rel="modulepreload" href="./src/corpus.js">
+  <link rel="modulepreload" href="./src/ui/model.js">
+  <link rel="icon" href="./favicon.ico" sizes="any">
+</head>
+<body>
+  <main id="app" class="app-shell" aria-labelledby="app-title">
+    <p class="eyebrow">BenchDev / device benchmark</p>
+    <h1 id="app-title">How fast is this device?</h1>
+    <div id="screen"></div>
+  </main>
+  <noscript>BenchDev needs JavaScript because every measurement runs in this browser.</noscript>
+</body>
+</html>

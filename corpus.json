@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "corpusVersion": 1,
+  "buildMonth": "2026-09",
+  "entries": [
+    {
+      "kind": "scored",
+      "schemaVersion": 1,
+      "protocolVersion": 5,
+      "scoringVersion": 1,
+      "baselineVersion": 1,
+      "previewMode": "standard",
+      "capturedMonth": "2026-08",
+      "detected": {
+        "browser": {
+          "name": "Chromium",
+          "majorVersion": 149
+        },
+        "osFamily": "Windows",
+        "reportedConcurrency": {
+          "value": 16,
+          "unit": "logical processors"
+        },
+        "measuredParallelism": {
+          "value": 8,
+          "unit": "workers"
+        },
+        "gpuRenderer": null,
+        "devicePixelRatio": {
+          "value": 1,
+          "unit": "ratio"
+        }
+      },
+      "label": {
+        "value": "Desktop: AMD Ryzen 7 5800X3D (8C/16T), AMD Radeon RX 9070 XT, 32 GB",
+        "claimed": true
+      },
+      "score": {
+        "value": 100,
+        "unit": "BenchDev points"
+      },
+      "subScores": [
+        {
+          "id": "cpuJsSingleThreadThroughput",
+          "value": 100,
+          "unit": "BenchDev points"
+        },
+        {
+          "id": "cpuWasmSingleThreadThroughput",
+          "value": 100,
+          "unit": "BenchDev points"
+        },
+        {
+          "id": "cpuParallelThroughput",
+          "value": 100,
+          "unit": "BenchDev points"
+        },
+        {
+          "id": "gpuSustainedWorkRate",
+          "value": 100,
+          "unit": "BenchDev points"
+        }
+      ]
+    }
+  ]
+}

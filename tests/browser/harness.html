@@ -1,0 +1,195 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>BenchDev browser acceptance</title>
+<p>Loaded by <code>run-browser-acceptance.mjs</code>. Nothing here is part of the product.</p>
+<canvas id="preview"></canvas>
+
+<script type="module">
+  import { runT1BrowserAcceptance } from "./t1-acceptance.js";
+  import { runT2BrowserAcceptance } from "./t2-acceptance.js";
+  import { runT3BrowserAcceptance } from "./t3-acceptance.js";
+  import { runT4BrowserAcceptance, runT4ContextLossAcceptance } from "./t4-acceptance.js";
+  import { runT5BrowserAcceptance } from "./t5-acceptance.js";
+  import { measureBaseline } from "./measure-baseline.js";
+  import { measureCpuJsSingleThread } from "../../src/workloads/cpu-browser.js";
+  import { createRunner } from "../../src/runner.js";
+  import { createRunStateMachine } from "../../src/run-state.js";
+  import { GPU_PREVIEW_SURFACE_PX } from "../../src/workloads/gpu.js";
+
+  // The effective timer clamp, probed the way T2b specifies: read the clock until the value
+  // actually changes. Asking the browser what its resolution is would be the exact mistake this
+  // project exists to avoid.
+  function timerSamples(count = 400) {
+    const samples = [];
+    for (let i = 0; i < count; i += 1) {
+      const start = performance.now();
+      let now = start;
+      while (now === start) now = performance.now();
+      samples.push(now);
+    }
+    return samples;
+  }
+
+  async function measureCpu() {
+    const runner = createRunner({ stateMachine: createRunStateMachine() });
+    const started = runner.start((resources) => measureCpuJsSingleThread(resources));
+    const outcome = await started.completion;
+    if (outcome.kind !== "completed") throw new Error("cold CPU probe did not complete");
+    return outcome.value.workUnits / (outcome.value.elapsedMs / 1000);
+  }
+
+  // T1 needs a band for "normal", and a band invented by hand would make its third criterion
+  // meaningless. Establish it by measuring, then widen generously: this is a guard against a
+  // torn-down run returning garbage, not a performance assertion.
+  async function establishColdRunBand() {
+    const runs = [];
+    for (let i = 0; i < 3; i += 1) runs.push(await measureCpu());
+    const low = Math.min(...runs);
+    const high = Math.max(...runs);
+    return { minimum: low * 0.5, maximum: high * 2, observed: runs };
+  }
+
+  function rendererInfo() {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl2");
+    if (!gl) return { webgl2: false, renderer: "none" };
+    const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+    const info = {
+      webgl2: true,
+      renderer: gl.getParameter(gl.RENDERER),
+      unmasked: dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : null,
+    };
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return info;
+  }
+
+  async function record(results, name, fn) {
+    const t0 = performance.now();
+    try {
+      const detail = await fn();
+      const acceptanceStatus = detail?.acceptanceStatus;
+      results.push({
+        name,
+        status: acceptanceStatus === "unverified" ? "unverified" : "pass",
+        detail: `${Math.round(performance.now() - t0)} ms${
+          acceptanceStatus === "unverified"
+            ? " · " + detail.detail
+            : detail && typeof detail === "string" ? " · " + detail : ""
+        }`,
+      });
+    } catch (error) {
+      results.push({ name, status: "fail", detail: error?.message ?? String(error) });
+    }
+  }
+
+  window.__runAcceptance = async () => {
+    const results = [];
+    const measuredTimerSamples = timerSamples();
+    // 🔴 A CANVAS CAN ONLY EVER HAVE ONE WebGL CONTEXT. Sharing one across the T4 checks made the
+    // second one silently reuse the first's already-torn-down context, so a passing workload was
+    // reported as "did not complete". That was a defect in this harness, not in the product, and
+    // it cost a debugging round. Every GPU check gets its own canvas.
+    const freshCanvas = () => {
+      const c = document.createElement("canvas");
+      c.width = GPU_PREVIEW_SURFACE_PX.width;
+      c.height = GPU_PREVIEW_SURFACE_PX.height;
+      document.body.appendChild(c);
+      return c;
+    };
+    const canvas = freshCanvas();
+
+    const gl = rendererInfo();
+    const band = await establishColdRunBand();
+
+    await record(results, "T1 · cancel stops the workers and drops the GPU context",
+      () => runT1BrowserAcceptance({ measureCpu, normalColdRunBand: band }));
+
+    await record(results, "T2 · real-engine checksums are count-dependent and work units are 5-10 ms",
+      () => runT2BrowserAcceptance({ timerSamples: measuredTimerSamples }));
+
+    await record(results, "T3 · parallel ramp scales, and the serialised control does not",
+      () => runT3BrowserAcceptance());
+
+    // Diagnostic first: when the GPU workload "does not complete", the acceptance assertion
+    // hides WHY. Run it directly and surface the real outcome.
+    await record(results, "T4 diagnostic · what the GPU workload actually returns", async () => {
+      const { measureGpuWorkload } = await import("../../src/workloads/gpu-browser.js");
+      const r = createRunner({ stateMachine: createRunStateMachine() });
+      const started = r.start((resources) => measureGpuWorkload(resources, {
+        previewCanvas: canvas, previewMode: "standard",
+        timerSamples: measuredTimerSamples,
+      }));
+      const outcome = await started.completion;
+      if (outcome.kind !== "completed") {
+        // Is the failure caused by YIELDING, or by the complexity level changing? Re-run with a
+        // trivial yield. If that completes, the yield is implicated; if it fails at the same
+        // frame, the level change is.
+        const r2 = createRunner({ stateMachine: createRunStateMachine() });
+        const s2 = r2.start((res) => measureGpuWorkload(res, {
+          previewCanvas: freshCanvas(), previewMode: "standard",
+          timerSamples: measuredTimerSamples,
+          yieldControl: () => Promise.resolve(),
+        }));
+        const o2 = await s2.completion;
+        globalThis.__trivialYield = o2.kind === "completed"
+          ? "COMPLETED with a trivial yield"
+          : `also failed: ${(o2.error ?? o2.reason)?.message ?? o2.kind}`;
+      }
+      if (outcome.kind !== "completed") {
+        const err = outcome.error ?? outcome.reason ?? outcome;
+        throw new Error(`kind=${outcome.kind} :: ${err?.message ?? JSON.stringify(err)?.slice(0, 300)}`);
+      }
+      return `status=${outcome.value.measurementStatus} complexity=${outcome.value.complexityLevel ?? "cap"} renderer=${outcome.value.renderer?.unmaskedRenderer ?? "?"}`;
+    });
+
+    await record(results, "T4 · GPU workload, fixed target, preview invariant",
+      () => runT4BrowserAcceptance({
+        previewCanvas: freshCanvas(),
+        previewMode: "standard",
+        timerSamples: measuredTimerSamples,
+      }));
+
+    await record(results, "T4 · deliberate context loss invalidates loudly",
+      () => runT4ContextLossAcceptance({
+        previewCanvas: freshCanvas(),
+        previewMode: "standard",
+        timerSamples: measuredTimerSamples,
+      }));
+
+    await record(results, "T5 · sustained decline and recovery probe",
+      () => runT5BrowserAcceptance({
+        calibrationCanvas: freshCanvas(),
+        sustainedCanvas: freshCanvas(),
+        previewMode: "standard",
+        timerSamples: measuredTimerSamples,
+      }));
+
+    return {
+      results,
+      environment: {
+        userAgent: navigator.userAgent,
+        reportedConcurrency: String(navigator.hardwareConcurrency ?? "null"),
+        devicePixelRatio: String(devicePixelRatio),
+        webgl2: String(gl.webgl2),
+        renderer: String(gl.renderer),
+        unmaskedRenderer: String(gl.unmasked),
+        coldRunObservations: band.observed.map((v) => v.toFixed(1)).join(", "),
+        gpuRampStatus: String(globalThis.__gpuRampStatus ?? "n/a"),
+
+      },
+    };
+  };
+
+  // ⚠️ Its own canvas, module scope. `freshCanvas` lives INSIDE __runAcceptance and is not
+  // visible here, and one canvas can only ever hold one WebGL context anyway.
+  window.__measureBaseline = async (repeats, only, settleMs) => {
+    const makeCanvas = () => {
+      const c = document.createElement("canvas");
+      c.width = GPU_PREVIEW_SURFACE_PX.width;
+      c.height = GPU_PREVIEW_SURFACE_PX.height;
+      document.body.appendChild(c);
+      return c;
+    };
+    return measureBaseline({ makeCanvas, repeats, only, settleMs });
+  };
+</script>
